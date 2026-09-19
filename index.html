@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ELIV Expo - Lead Capture</title>
+  <style>
+    :root {
+      --bg: #121212;
+      --card-bg: #1e1e1e;
+      --primary: #00e676;
+      --text: #ffffff;
+      --text-muted: #a0a0a0;
+      --border: #333333;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); padding: 1.5rem; }
+    
+    .container { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 768px) { .container { grid-template-columns: 1fr; } }
+
+    header { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+    h1 { font-size: 1.5rem; color: var(--primary); }
+    .badge { background: #263238; color: #80d8ff; padding: 0.3rem 0.8rem; border-radius: 12px; font-size: 0.85rem; }
+
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+    
+    /* Scanner Area */
+    #reader { width: 100%; border-radius: 8px; overflow: hidden; background: #000; min-height: 250px; }
+
+    /* Form Styling */
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.3rem; }
+    input, textarea, select { width: 100%; padding: 0.75rem; background: #2a2a2a; border: 1px solid var(--border); border-radius: 6px; color: #fff; font-size: 1rem; }
+    input:focus, textarea:focus { border-color: var(--primary); outline: none; }
+
+    button { width: 100%; padding: 0.85rem; background: var(--primary); color: #000; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; }
+    button:hover { opacity: 0.9; }
+    .btn-export { background: #0288d1; color: #fff; width: auto; padding: 0.5rem 1rem; }
+
+    /* Table */
+    .full-width { grid-column: 1 / -1; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+    th { color: var(--text-muted); }
+  </style>
+  <!-- HTML5 QR Code Scanner Library -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>ELIV Expo Lead Scanner</h1>
+      <span class="badge" id="lead-count">Leads Saved: 0</span>
+    </header>
+
+    <!-- Left Column: Camera Scanner -->
+    <div class="card">
+      <h2 style="margin-bottom: 1rem; font-size: 1.1rem;">1. Scan Badge / QR</h2>
+      <div id="reader"></div>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; text-align: center;">
+        Align attendee QR code inside the viewport.
+      </p>
+    </div>
+
+    <!-- Right Column: Lead Form -->
+    <div class="card">
+      <h2 style="margin-bottom: 1rem; font-size: 1.1rem;">2. Lead Details</h2>
+      <form id="lead-form">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="name" required placeholder="John Doe">
+        </div>
+        <div class="form-group">
+          <label>Company</label>
+          <input type="text" id="company" placeholder="Automotive OEM / Supplier">
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="email" placeholder="john@company.com">
+        </div>
+        <div class="form-group">
+          <label>Interest Level</label>
+          <select id="interest">
+            <option value="High">Hot Lead (Immediate Follow-up)</option>
+            <option value="Medium" selected>Medium Interest</option>
+            <option value="Low">General Info Only</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Notes / Requirements</label>
+          <textarea id="notes" rows="3" placeholder="Discussed MCU integration..."></textarea>
+        </div>
+        <button type="submit">Save Lead</button>
+      </form>
+    </div>
+
+    <!-- Bottom Row: Saved Leads Table -->
+    <div class="card full-width">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>Captured Leads History</h2>
+        <button id="export-btn" class="btn-export">Export to CSV</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Name</th>
+            <th>Company</th>
+            <th>Email</th>
+            <th>Interest</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="leads-table">
+          <!-- Populated dynamically -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    let leads = JSON.parse(localStorage.getItem('eliv_leads')) || [];
+
+    const leadForm = document.getElementById('lead-form');
+    const tableBody = document.getElementById('leads-table');
+    const leadCountEl = document.getElementById('lead-count');
+    const exportBtn = document.getElementById('export-btn');
+
+    // Parse vCard or simple string from QR code
+    function parseQRCode(qrData) {
+      if (qrData.includes('BEGIN:VCARD')) {
+        const nameMatch = qrData.match(/FN:(.*)/) || qrData.match(/N:(.*)/);
+        const orgMatch = qrData.match(/ORG:(.*)/);
+        const emailMatch = qrData.match(/EMAIL.*:(.*)/);
+
+        if (nameMatch) document.getElementById('name').value = nameMatch[1].trim();
+        if (orgMatch) document.getElementById('company').value = orgMatch[1].trim();
+        if (emailMatch) document.getElementById('email').value = emailMatch[1].trim();
+      } else {
+        // Fallback for plain text or JSON
+        try {
+          const data = JSON.parse(qrData);
+          if (data.name) document.getElementById('name').value = data.name;
+          if (data.company) document.getElementById('company').value = data.company;
+          if (data.email) document.getElementById('email').value = data.email;
+        } catch (e) {
+          document.getElementById('notes').value = `Scanned Data: ${qrData}\n` + document.getElementById('notes').value;
+        }
+      }
+    }
+
+    // Initialize Camera Scanner
+    const html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start(
+      { facingMode: "environment" }, // Uses back camera of Samsung Tab S9
+      { fps: 10, qrbox: { width: 200, height: 200 } },
+      (decodedText) => {
+        parseQRCode(decodedText);
+      },
+      (errorMessage) => {
+        // Scan err handled quietly
+      }
+    ).catch(err => {
+      console.warn("Camera start failed, fallback to manual entry:", err);
+    });
+
+    // Save Lead
+    leadForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const newLead = {
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        name: document.getElementById('name').value,
+        company: document.getElementById('company').value,
+        email: document.getElementById('email').value,
+        interest: document.getElementById('interest').value,
+        notes: document.getElementById('notes').value
+      };
+
+      leads.unshift(newLead);
+      localStorage.setItem('eliv_leads', JSON.stringify(leads));
+      updateUI();
+      leadForm.reset();
+    });
+
+    // Update UI Table & Count
+    function updateUI() {
+      leadCountEl.textContent = `Leads Saved: ${leads.length}`;
+      tableBody.innerHTML = '';
+      leads.forEach(lead => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${lead.timestamp}</td>
+          <td><strong>${lead.name}</strong></td>
+          <td>${lead.company}</td>
+          <td>${lead.email}</td>
+          <td>${lead.interest}</td>
+          <td>${lead.notes}</td>
+        `;
+        tableBody.appendChild(tr);
+      });
+    }
+
+    // CSV Export
+    exportBtn.addEventListener('click', () => {
+      if (leads.length === 0) return alert('No leads captured yet.');
+      let csv = 'Timestamp,Name,Company,Email,Interest,Notes\n';
+      leads.forEach(l => {
+        csv += `"${l.timestamp}","${l.name}","${l.company}","${l.email}","${l.interest}","${l.notes.replace(/"/g, '""')}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('href', url);
+      a.setAttribute('download', `ELIV_Leads_Export_${new Date().toISOString().split('T')[0]}.csv`);
+      a.click();
+    });
+
+    updateUI();
+  </script>
+</body>
+</html>
