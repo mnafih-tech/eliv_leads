@@ -3,244 +3,116 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="manifest" href="./manifest.json">
-  <link rel="icon" type="image/svg+xml" href="./icon.svg">
-  <link rel="apple-touch-icon" href="./icon.svg">
+  <title>ELIV Lead Scanner</title>
+  
+  <!-- Inline Web App Manifest -->
+  <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIkVMSVYgTGVhZCBTY2FubmVyIiwKICAic2hvcnRfbmFtZSI6ICJFTElWIiwKICAic3RhcnRfdXJsIjogIi4vIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMGEwZjFkIiwKICAidGhlbWVfY29sb3IiOiAiIzAwZmY4NyIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImRhdGE6aW1hZ2Uvc3ZnK3htbDtiYXNlNjQsUEhOMmR5QjNhV3gwY3lCc2FXNWxjeUExTVRJZ01USWdMM052ZFhKalpUQmhaRzFsYm5SZlpYSnlkV3BrTFdaeGIzTWlhSE4wY21sdVp6MHVJalp3ZFdUcDlaMlZoYzNSaEJuTjBjbWx1WnowdWZXNW5jaUExTW1WdVpHa3BDaUpwZEcxcGJtdGtkR1U2TENKcGMyTXZkMlpsWTJOaExtUjFZeTF6YldWMFpYTm9ZVzVsY2k1d2JHRnpaV1p2Y210aGJHbDVaeTBpS0R4emRHRnNiR1U1YzJsMWMybDZaRzB1YTJGNmFHOXpZMjl3Y3lCcGNHOXpjRzl6WVcxMElpQjNiM0prTFhCdmFXNW1ZV2RzSWpndUp6NG4iLAogICAgICAic2l6ZXMiOiAiNTEyeDUxMiIsCiAgICAgICJ0eXBlIjogImltYWdlL3N2Zyt4bWwiCiAgICB9CiAgXQp9">
+  
   <meta name="theme-color" content="#00ff87">
-  <title>ELIV Expo - Lead Capture</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
 
   <style>
     :root {
-      --bg: #121212;
-      --card-bg: #1e1e1e;
-      --primary: #00e676;
+      --bg: #0a0f1d;
+      --card: #121929;
+      --primary: #00ff87;
       --text: #ffffff;
-      --text-muted: #a0a0a0;
-      --border: #333333;
+      --border: #2a354d;
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); padding: 1.5rem; }
-    
-    .container { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-    @media (max-width: 768px) { .container { grid-template-columns: 1fr; } }
-
-    header { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
-    h1 { font-size: 1.5rem; color: var(--primary); }
-    .badge { background: #263238; color: #80d8ff; padding: 0.3rem 0.8rem; border-radius: 12px; font-size: 0.85rem; }
-
-    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
-    
-    /* Scanner Area */
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 1rem; }
+    .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid var(--border); margin-bottom: 1rem; }
+    .badge { background: #1a2c38; color: var(--primary); padding: 0.4rem 0.8rem; border-radius: 20px; font-weight: bold; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; }
     #reader { width: 100%; border-radius: 8px; overflow: hidden; background: #000; min-height: 250px; }
-
-    /* Form Styling */
-    .form-group { margin-bottom: 1rem; }
-    label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.3rem; }
-    input, textarea, select { width: 100%; padding: 0.75rem; background: #2a2a2a; border: 1px solid var(--border); border-radius: 6px; color: #fff; font-size: 1rem; }
-    input:focus, textarea:focus { border-color: var(--primary); outline: none; }
-
-    button { width: 100%; padding: 0.85rem; background: var(--primary); color: #000; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; }
-    button:hover { opacity: 0.9; }
-    .btn-export { background: #0288d1; color: #fff; width: auto; padding: 0.5rem 1rem; }
-
-    /* Table */
-    .full-width { grid-column: 1 / -1; }
-    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-    th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
-    th { color: var(--text-muted); }
+    input, select, textarea { width: 100%; padding: 0.75rem; margin-top: 0.5rem; margin-bottom: 1rem; background: #1a2333; border: 1px solid var(--border); color: #fff; border-radius: 6px; }
+    button { width: 100%; padding: 0.85rem; background: var(--primary); color: #000; font-weight: bold; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; }
   </style>
-  <!-- HTML5 QR Code Scanner Library -->
   <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
 
-  <div class="container">
-    <header>
-      <h1>ELIV Expo Lead Scanner</h1>
-      <span class="badge" id="lead-count">Leads Saved: 0</span>
-    </header>
+  <div class="header">
+    <h1 style="color:var(--primary); font-size:1.4rem;">ELIV Lead Scanner</h1>
+    <span class="badge" id="count">0 Leads</span>
+  </div>
 
-    <!-- Left Column: Camera Scanner -->
+  <div class="grid">
     <div class="card">
-      <h2 style="margin-bottom: 1rem; font-size: 1.1rem;">1. Scan Badge / QR</h2>
+      <h2 style="font-size:1.1rem; margin-bottom:0.5rem;">1. Scan Badge QR</h2>
       <div id="reader"></div>
-      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; text-align: center;">
-        Align attendee QR code inside the viewport.
-      </p>
     </div>
 
-    <!-- Right Column: Lead Form -->
     <div class="card">
-      <h2 style="margin-bottom: 1rem; font-size: 1.1rem;">2. Lead Details</h2>
-      <form id="lead-form">
-        <div class="form-group">
-          <label>Full Name</label>
-          <input type="text" id="name" required placeholder="John Doe">
-        </div>
-        <div class="form-group">
-          <label>Company</label>
-          <input type="text" id="company" placeholder="Automotive OEM / Supplier">
-        </div>
-        <div class="form-group">
-          <label>Email Address</label>
-          <input type="email" id="email" placeholder="john@company.com">
-        </div>
-        <div class="form-group">
-          <label>Interest Level</label>
-          <select id="interest">
-            <option value="High">Hot Lead (Immediate Follow-up)</option>
-            <option value="Medium" selected>Medium Interest</option>
-            <option value="Low">General Info Only</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Notes / Requirements</label>
-          <textarea id="notes" rows="3" placeholder="Discussed MCU integration..."></textarea>
-        </div>
+      <h2 style="font-size:1.1rem; margin-bottom:0.5rem;">2. Lead Details</h2>
+      <form id="form">
+        <input type="text" id="name" placeholder="Full Name" required>
+        <input type="text" id="company" placeholder="Company">
+        <input type="email" id="email" placeholder="Email">
+        <select id="interest">
+          <option value="Hot">Hot Lead</option>
+          <option value="Medium" selected>Medium Interest</option>
+          <option value="Low">Low Interest</option>
+        </select>
+        <textarea id="notes" placeholder="Notes..."></textarea>
         <button type="submit">Save Lead</button>
       </form>
-    </div>
-
-    <!-- Bottom Row: Saved Leads Table -->
-    <div class="card full-width">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2>Captured Leads History</h2>
-        <button id="export-btn" class="btn-export">Export to CSV</button>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Time</th>
-            <th>Name</th>
-            <th>Company</th>
-            <th>Email</th>
-            <th>Interest</th>
-            <th>Notes</th>
-          </tr>
-        </thead>
-        <tbody id="leads-table">
-          <!-- Populated dynamically -->
-        </tbody>
-      </table>
     </div>
   </div>
 
   <script>
     let leads = JSON.parse(localStorage.getItem('eliv_leads')) || [];
+    const countEl = document.getElementById('count');
 
-    const leadForm = document.getElementById('lead-form');
-    const tableBody = document.getElementById('leads-table');
-    const leadCountEl = document.getElementById('lead-count');
-    const exportBtn = document.getElementById('export-btn');
-
-    // Parse vCard or simple string from QR code
-    function parseQRCode(qrData) {
-      if (qrData.includes('BEGIN:VCARD')) {
-        const nameMatch = qrData.match(/FN:(.*)/) || qrData.match(/N:(.*)/);
-        const orgMatch = qrData.match(/ORG:(.*)/);
-        const emailMatch = qrData.match(/EMAIL.*:(.*)/);
-
-        if (nameMatch) document.getElementById('name').value = nameMatch[1].trim();
-        if (orgMatch) document.getElementById('company').value = orgMatch[1].trim();
-        if (emailMatch) document.getElementById('email').value = emailMatch[1].trim();
-      } else {
-        // Fallback for plain text or JSON
-        try {
-          const data = JSON.parse(qrData);
-          if (data.name) document.getElementById('name').value = data.name;
-          if (data.company) document.getElementById('company').value = data.company;
-          if (data.email) document.getElementById('email').value = data.email;
-        } catch (e) {
-          document.getElementById('notes').value = `Scanned Data: ${qrData}\n` + document.getElementById('notes').value;
-        }
-      }
-    }
-
-    // Initialize Camera Scanner
-    const html5QrCode = new Html5Qrcode("reader");
-    html5QrCode.start(
-      { facingMode: "environment" }, // Uses back camera of Samsung Tab S9
-      { fps: 10, qrbox: { width: 200, height: 200 } },
-      (decodedText) => {
-        parseQRCode(decodedText);
-      },
-      (errorMessage) => {
-        // Scan err handled quietly
-      }
-    ).catch(err => {
-      console.warn("Camera start failed, fallback to manual entry:", err);
-    });
-
-    // Save Lead
-    leadForm.addEventListener('submit', (e) => {
+    function updateCount() { countEl.textContent = `${leads.length} Leads`; }
+    
+    document.getElementById('form').addEventListener('submit', (e) => {
       e.preventDefault();
-      const newLead = {
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      leads.unshift({
         name: document.getElementById('name').value,
         company: document.getElementById('company').value,
         email: document.getElementById('email').value,
         interest: document.getElementById('interest').value,
         notes: document.getElementById('notes').value
-      };
-
-      leads.unshift(newLead);
+      });
       localStorage.setItem('eliv_leads', JSON.stringify(leads));
-      updateUI();
-      leadForm.reset();
+      updateCount();
+      e.target.reset();
     });
 
-    // Update UI Table & Count
-    function updateUI() {
-      leadCountEl.textContent = `Leads Saved: ${leads.length}`;
-      tableBody.innerHTML = '';
-      leads.forEach(lead => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${lead.timestamp}</td>
-          <td><strong>${lead.name}</strong></td>
-          <td>${lead.company}</td>
-          <td>${lead.email}</td>
-          <td>${lead.interest}</td>
-          <td>${lead.notes}</td>
-        `;
-        tableBody.appendChild(tr);
-      });
-    }
+    // Scanner Initialization
+    const scanner = new Html5Qrcode("reader");
+    scanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 220, height: 220 } },
+      (text) => {
+        if (text.includes('BEGIN:VCARD')) {
+          const n = text.match(/FN:(.*)/) || text.match(/N:(.*)/);
+          const c = text.match(/ORG:(.*)/);
+          const em = text.match(/EMAIL.*:(.*)/);
+          if (n) document.getElementById('name').value = n[1].trim();
+          if (c) document.getElementById('company').value = c[1].trim();
+          if (em) document.getElementById('email').value = em[1].trim();
+        } else {
+          document.getElementById('name').value = text;
+        }
+      }
+    ).catch(() => {});
 
-    // CSV Export
-    exportBtn.addEventListener('click', () => {
-      if (leads.length === 0) return alert('No leads captured yet.');
-      let csv = 'Timestamp,Name,Company,Email,Interest,Notes\n';
-      leads.forEach(l => {
-        csv += `"${l.timestamp}","${l.name}","${l.company}","${l.email}","${l.interest}","${l.notes.replace(/"/g, '""')}"\n`;
-      });
+    updateCount();
 
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.setAttribute('href', url);
-      a.setAttribute('download', `ELIV_Leads_Export_${new Date().toISOString().split('T')[0]}.csv`);
-      a.click();
-    });
-
-    updateUI();
-  </script>
-  <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      // Registers an inline service worker for offline installation capability
+    // Inline Service Worker for PWA Installation Capability
+    if ('serviceWorker' in navigator) {
       const swCode = `
         self.addEventListener('install', (e) => self.skipWaiting());
         self.addEventListener('activate', (e) => e.waitUntil(clients.claim()));
         self.addEventListener('fetch', (e) => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
       `;
       const blob = new Blob([swCode], { type: 'text/javascript' });
-      navigator.serviceWorker.register(URL.createObjectURL(blob))
-        .then(() => console.log('PWA Service Worker Ready'))
-        .catch(err => console.error('SW Error:', err));
-    });
-  }
-</script>
+      navigator.serviceWorker.register(URL.createObjectURL(blob));
+    }
+  </script>
 </body>
 </html>
