@@ -3,10 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ELIV Expo - Lead Capture</title>
   <link rel="manifest" href="./manifest.json">
-<link rel="icon" type="image/svg+xml" href="./icon.svg">
-<link rel="apple-touch-icon" href="./icon.svg">
+  <link rel="icon" type="image/svg+xml" href="./icon.svg">
+  <link rel="apple-touch-icon" href="./icon.svg">
+  <meta name="theme-color" content="#00ff87">
+  <title>ELIV Expo - Lead Capture</title>
+
   <style>
     :root {
       --bg: #121212;
@@ -224,5 +226,21 @@
 
     updateUI();
   </script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      // Registers an inline service worker for offline installation capability
+      const swCode = `
+        self.addEventListener('install', (e) => self.skipWaiting());
+        self.addEventListener('activate', (e) => e.waitUntil(clients.claim()));
+        self.addEventListener('fetch', (e) => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
+      `;
+      const blob = new Blob([swCode], { type: 'text/javascript' });
+      navigator.serviceWorker.register(URL.createObjectURL(blob))
+        .then(() => console.log('PWA Service Worker Ready'))
+        .catch(err => console.error('SW Error:', err));
+    });
+  }
+</script>
 </body>
 </html>
