@@ -5,9 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ELIV Lead Scanner</title>
   
-  <!-- Inline Web App Manifest -->
-  <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIkVMSVYgTGVhZCBTY2FubmVyIiwKICAic2hvcnRfbmFtZSI6ICJFTElWIiwKICAic3RhcnRfdXJsIjogIi4vIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMGEwZjFkIiwKICAidGhlbWVfY29sb3IiOiAiIzAwZmY4NyIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImRhdGE6aW1hZ2Uvc3ZnK3htbDtiYXNlNjQsUEhOMmR5QjNhV3gwY3lCc2FXNWxjeUExTVRJZ01USWdMM052ZFhKalpUQmhaRzFsYm5SZlpYSnlkV3BrTFdaeGIzTWlhSE4wY21sdVp6MHVJalp3ZFdUcDlaMlZoYzNSaEJuTjBjbWx1WnowdWZXNW5jaUExTW1WdVpHa3BDaUpwZEcxcGJtdGtkR1U2TENKcGMyTXZkMlpsWTJOaExtUjFZeTF6YldWMFpYTm9ZVzVsY2k1d2JHRnpaV1p2Y210aGJHbDVaeTBpS0R4emRHRnNiR1U1YzJsMWMybDZaRzB1YTJGNmFHOXpZMjl3Y3lCcGNHOXpjRzl6WVcxMElpQjNiM0prTFhCdmFXNW1ZV2RzSWpndUp6NG4iLAogICAgICAic2l6ZXMiOiAiNTEyeDUxMiIsCiAgICAgICJ0eXBlIjogImltYWdlL3N2Zyt4bWwiCiAgICB9CiAgXQp9">
-  
+  <!-- External Real Manifest -->
+  <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#00ff87">
   <meta name="apple-mobile-web-app-capable" content="yes">
 
@@ -103,12 +102,12 @@
 
     updateCount();
 
-    // Register physical Service Worker for PWA compliance & installation
+    // Register physical Service Worker for PWA compliance
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('Service Worker Registered Successfully'))
-          .catch(err => console.error('SW Registration Error:', err));
+          .then(reg => console.log('SW Registered'))
+          .catch(err => console.error('SW Error:', err));
       });
     }
   </script>
