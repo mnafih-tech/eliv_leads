@@ -34,12 +34,14 @@
     
     .btn { width: 100%; padding: 0.85rem; background: var(--primary); color: #000; font-weight: bold; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; }
     .btn-export { background: #60efff; color: #000; margin-bottom: 1rem; }
-    .btn-clear { background: transparent; color: var(--danger); border: 1px solid var(--danger); width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+    .btn-clear { background: transparent; color: var(--danger); border: 1px solid var(--danger); width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: 4px; cursor: pointer; }
+    .btn-delete-item { background: rgba(255, 71, 87, 0.15); color: var(--danger); border: 1px solid var(--danger); padding: 0.25rem 0.6rem; font-size: 0.8rem; border-radius: 4px; cursor: pointer; }
+    .btn-delete-item:hover { background: var(--danger); color: #fff; }
 
-    /* Table Styles for Viewing Leads */
+    /* Table Styles */
     .table-container { overflow-x: auto; margin-top: 1rem; }
     table { width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left; }
-    th, td { padding: 0.75rem; border-bottom: 1px solid var(--border); }
+    th, td { padding: 0.75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
     th { background: #1a2333; color: var(--primary); }
     .tag-Hot { color: #ff4757; font-weight: bold; }
     .tag-Medium { color: #ffa500; }
@@ -68,6 +70,7 @@
         <input type="text" id="name" placeholder="Full Name" required>
         <input type="text" id="company" placeholder="Company">
         <input type="email" id="email" placeholder="Email Address">
+        <input type="tel" id="phone" placeholder="Telefon / Phone Number">
         <select id="interest">
           <option value="Hot">🔥 Hot Lead</option>
           <option value="Medium" selected>⚡ Medium Interest</option>
@@ -95,13 +98,15 @@
             <th>Name</th>
             <th>Company</th>
             <th>Email</th>
+            <th>Telefon</th>
             <th>Interest</th>
             <th>Notes</th>
             <th>Date/Time</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody id="leadTableBody">
-          <!-- Rows will be injected here dynamically -->
+          <!-- Rows injected dynamically -->
         </tbody>
       </table>
     </div>
@@ -115,18 +120,22 @@
       document.getElementById('count').textContent = `${leads.length} Leads Saved`;
       
       if (leads.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#888;">No leads captured yet. Scan a badge or enter details above.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#888;">No leads captured yet. Scan a badge or enter details above.</td></tr>';
         return;
       }
 
-      tbody.innerHTML = leads.map(l => `
+      tbody.innerHTML = leads.map((l, index) => `
         <tr>
           <td><strong>${escapeHtml(l.name)}</strong></td>
           <td>${escapeHtml(l.company || '-')}</td>
           <td>${escapeHtml(l.email || '-')}</td>
+          <td>${escapeHtml(l.phone || '-')}</td>
           <td><span class="tag-${l.interest}">${l.interest}</span></td>
           <td>${escapeHtml(l.notes || '-')}</td>
           <td style="font-size:0.8rem; color:#aaa;">${l.timestamp}</td>
+          <td>
+            <button onclick="deleteSingleLead(${index})" class="btn-delete-item">Delete</button>
+          </td>
         </tr>
       `).join('');
     }
@@ -142,6 +151,7 @@
         name: document.getElementById('name').value,
         company: document.getElementById('company').value,
         email: document.getElementById('email').value,
+        phone: document.getElementById('phone').value,
         interest: document.getElementById('interest').value,
         notes: document.getElementById('notes').value,
         timestamp: new Date().toLocaleString()
@@ -153,6 +163,16 @@
       e.target.reset();
     });
 
+    // Delete single lead
+    function deleteSingleLead(index) {
+      const leadName = leads[index].name;
+      if (confirm(`Delete lead entry for "${leadName}"?`)) {
+        leads.splice(index, 1);
+        localStorage.setItem('eliv_leads', JSON.stringify(leads));
+        renderLeads();
+      }
+    }
+
     // Export to CSV File
     function exportToCSV() {
       if (leads.length === 0) {
@@ -160,12 +180,13 @@
         return;
       }
 
-      let csvContent = "data:text/csv;charset=utf-8,Name,Company,Email,Interest Level,Notes,Timestamp\n";
+      let csvContent = "data:text/csv;charset=utf-8,Name,Company,Email,Telefon,Interest Level,Notes,Timestamp\n";
       leads.forEach(l => {
         let row = [
           `"${l.name.replace(/"/g, '""')}"`,
           `"${(l.company || '').replace(/"/g, '""')}"`,
           `"${(l.email || '').replace(/"/g, '""')}"`,
+          `"${(l.phone || '').replace(/"/g, '""')}"`,
           `"${l.interest}"`,
           `"${(l.notes || '').replace(/"/g, '""')}"`,
           `"${l.timestamp}"`
@@ -182,7 +203,7 @@
       document.body.removeChild(link);
     }
 
-    // Delete Leads
+    // Clear All
     function clearAllLeads() {
       if (confirm("Are you sure you want to delete all saved leads? This cannot be undone.")) {
         leads = [];
@@ -191,7 +212,7 @@
       }
     }
 
-    // QR Scanner Initialization
+    // QR Scanner Initialization with vCard TEL parsing
     const scanner = new Html5Qrcode("reader");
     scanner.start(
       { facingMode: "environment" },
@@ -201,9 +222,12 @@
           const n = text.match(/FN:(.*)/) || text.match(/N:(.*)/);
           const c = text.match(/ORG:(.*)/);
           const em = text.match(/EMAIL.*:(.*)/);
+          const ph = text.match(/TEL.*:(.*)/);
+
           if (n) document.getElementById('name').value = n[1].trim();
           if (c) document.getElementById('company').value = c[1].trim();
           if (em) document.getElementById('email').value = em[1].trim();
+          if (ph) document.getElementById('phone').value = ph[1].trim();
         } else {
           document.getElementById('name').value = text;
         }
