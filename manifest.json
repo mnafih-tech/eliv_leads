@@ -1,17 +1,22 @@
 {
-  "name": "ELIV Expo Lead Scanner",
-  "short_name": "ELIV Scanner",
-  "description": "Offline lead retrieval tool for ELIV Expo",
+  "name": "ELIV Lead Scanner",
+  "short_name": "ELIV",
   "start_url": "./index.html",
+  "id": "eliv-lead-scanner-pwa",
   "display": "standalone",
   "background_color": "#0a0f1d",
   "theme_color": "#00ff87",
-  "orientation": "any",
   "icons": [
     {
-      "src": "./icon.svg",
+      "src": "https://raw.githubusercontent.com/google/material-design-icons/master/png/action/qr_code_scanner/materialicons/192pt/1x/baseline_qr_code_scanner_black_192pt.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/google/material-design-icons/master/png/action/qr_code_scanner/materialicons/512pt/1x/baseline_qr_code_scanner_black_512pt.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]
