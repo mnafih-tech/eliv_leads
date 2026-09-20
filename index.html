@@ -28,11 +28,12 @@
     @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
     
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; }
-    #reader { width: 100%; border-radius: 8px; overflow: hidden; background: #000; min-height: 220px; }
+    #reader { width: 100%; border-radius: 8px; overflow: hidden; background: #000; min-height: 220px; margin-top: 0.8rem; display: none; }
     
     input, select, textarea { width: 100%; padding: 0.75rem; margin-top: 0.4rem; margin-bottom: 0.8rem; background: #1a2333; border: 1px solid var(--border); color: #fff; border-radius: 6px; }
     
     .btn { width: 100%; padding: 0.85rem; background: var(--primary); color: #000; font-weight: bold; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; }
+    .btn-scan { background: #1a2333; color: var(--primary); border: 1px solid var(--primary); margin-bottom: 0.5rem; }
     .btn-export { background: #60efff; color: #000; margin-bottom: 1rem; }
     .btn-clear { background: transparent; color: var(--danger); border: 1px solid var(--danger); width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: 4px; cursor: pointer; }
     .btn-delete-item { background: rgba(255, 71, 87, 0.15); color: var(--danger); border: 1px solid var(--danger); padding: 0.25rem 0.6rem; font-size: 0.8rem; border-radius: 4px; cursor: pointer; }
@@ -57,9 +58,10 @@
   </div>
 
   <div class="grid">
-    <!-- Camera Section -->
+    <!-- Camera / Scanner Section -->
     <div class="card">
-      <h2 style="font-size:1.1rem; margin-bottom:0.5rem;">1. Scan Badge QR</h2>
+      <h2 style="font-size:1.1rem; margin-bottom:0.8rem;">1. Badge Scanner</h2>
+      <button id="scanToggleBtn" onclick="toggleScanner()" class="btn btn-scan">📷 Start Camera Scanner</button>
       <div id="reader"></div>
     </div>
 
@@ -114,6 +116,8 @@
 
   <script>
     let leads = JSON.parse(localStorage.getItem('eliv_leads')) || [];
+    let html5QrcodeScanner = null;
+    let isScanning = false;
 
     function renderLeads() {
       const tbody = document.getElementById('leadTableBody');
@@ -142,6 +146,61 @@
 
     function escapeHtml(str) {
       return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    // Toggle Camera Scanner On/Off via Button
+    function toggleScanner() {
+      const btn = document.getElementById('scanToggleBtn');
+      const readerBox = document.getElementById('reader');
+
+      if (!isScanning) {
+        readerBox.style.display = 'block';
+        if (!html5QrcodeScanner) {
+          html5QrcodeScanner = new Html5Qrcode("reader");
+        }
+        
+        html5QrcodeScanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 200, height: 200 } },
+          (text) => {
+            // Success QR Scan Callback
+            if (text.includes('BEGIN:VCARD')) {
+              const n = text.match(/FN:(.*)/) || text.match(/N:(.*)/);
+              const c = text.match(/ORG:(.*)/);
+              const em = text.match(/EMAIL.*:(.*)/);
+              const ph = text.match(/TEL.*:(.*)/);
+
+              if (n) document.getElementById('name').value = n[1].trim();
+              if (c) document.getElementById('company').value = c[1].trim();
+              if (em) document.getElementById('email').value = em[1].trim();
+              if (ph) document.getElementById('phone').value = ph[1].trim();
+            } else {
+              document.getElementById('name').value = text;
+            }
+            // Stop scanning after successful read
+            toggleScanner();
+          }
+        ).then(() => {
+          isScanning = true;
+          btn.textContent = "🛑 Stop Camera Scanner";
+          btn.style.background = "var(--danger)";
+          btn.style.color = "#fff";
+        }).catch(err => {
+          alert("Unable to access camera: " + err);
+          readerBox.style.display = 'none';
+        });
+
+      } else {
+        if (html5QrcodeScanner) {
+          html5QrcodeScanner.stop().then(() => {
+            isScanning = false;
+            readerBox.style.display = 'none';
+            btn.textContent = "📷 Start Camera Scanner";
+            btn.style.background = "#1a2333";
+            btn.style.color = "var(--primary)";
+          }).catch(() => {});
+        }
+      }
     }
 
     // Save Lead Function
@@ -211,28 +270,6 @@
         renderLeads();
       }
     }
-
-    // QR Scanner Initialization with vCard TEL parsing
-    const scanner = new Html5Qrcode("reader");
-    scanner.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: { width: 200, height: 200 } },
-      (text) => {
-        if (text.includes('BEGIN:VCARD')) {
-          const n = text.match(/FN:(.*)/) || text.match(/N:(.*)/);
-          const c = text.match(/ORG:(.*)/);
-          const em = text.match(/EMAIL.*:(.*)/);
-          const ph = text.match(/TEL.*:(.*)/);
-
-          if (n) document.getElementById('name').value = n[1].trim();
-          if (c) document.getElementById('company').value = c[1].trim();
-          if (em) document.getElementById('email').value = em[1].trim();
-          if (ph) document.getElementById('phone').value = ph[1].trim();
-        } else {
-          document.getElementById('name').value = text;
-        }
-      }
-    ).catch(() => {});
 
     // Initial Load
     renderLeads();
