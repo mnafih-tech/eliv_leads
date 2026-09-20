@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ELIV Lead Scanner</title>
   
-  <!-- External Real Manifest -->
   <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#00ff87">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,19 +14,36 @@
       --bg: #0a0f1d;
       --card: #121929;
       --primary: #00ff87;
+      --danger: #ff4757;
       --text: #ffffff;
       --border: #2a354d;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 1rem; }
+    
     .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid var(--border); margin-bottom: 1rem; }
     .badge { background: #1a2c38; color: var(--primary); padding: 0.4rem 0.8rem; border-radius: 20px; font-weight: bold; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
     @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+    
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; }
-    #reader { width: 100%; border-radius: 8px; overflow: hidden; background: #000; min-height: 250px; }
-    input, select, textarea { width: 100%; padding: 0.75rem; margin-top: 0.5rem; margin-bottom: 1rem; background: #1a2333; border: 1px solid var(--border); color: #fff; border-radius: 6px; }
-    button { width: 100%; padding: 0.85rem; background: var(--primary); color: #000; font-weight: bold; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; }
+    #reader { width: 100%; border-radius: 8px; overflow: hidden; background: #000; min-height: 220px; }
+    
+    input, select, textarea { width: 100%; padding: 0.75rem; margin-top: 0.4rem; margin-bottom: 0.8rem; background: #1a2333; border: 1px solid var(--border); color: #fff; border-radius: 6px; }
+    
+    .btn { width: 100%; padding: 0.85rem; background: var(--primary); color: #000; font-weight: bold; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; }
+    .btn-export { background: #60efff; color: #000; margin-bottom: 1rem; }
+    .btn-clear { background: transparent; color: var(--danger); border: 1px solid var(--danger); width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+
+    /* Table Styles for Viewing Leads */
+    .table-container { overflow-x: auto; margin-top: 1rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left; }
+    th, td { padding: 0.75rem; border-bottom: 1px solid var(--border); }
+    th { background: #1a2333; color: var(--primary); }
+    .tag-Hot { color: #ff4757; font-weight: bold; }
+    .tag-Medium { color: #ffa500; }
+    .tag-Low { color: #2ed573; }
   </style>
   <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
@@ -35,57 +51,151 @@
 
   <div class="header">
     <h1 style="color:var(--primary); font-size:1.4rem;">ELIV Lead Scanner</h1>
-    <span class="badge" id="count">0 Leads</span>
+    <span class="badge" id="count">0 Leads Saved</span>
   </div>
 
   <div class="grid">
+    <!-- Camera Section -->
     <div class="card">
       <h2 style="font-size:1.1rem; margin-bottom:0.5rem;">1. Scan Badge QR</h2>
       <div id="reader"></div>
     </div>
 
+    <!-- Form Section -->
     <div class="card">
       <h2 style="font-size:1.1rem; margin-bottom:0.5rem;">2. Lead Details</h2>
       <form id="form">
         <input type="text" id="name" placeholder="Full Name" required>
         <input type="text" id="company" placeholder="Company">
-        <input type="email" id="email" placeholder="Email">
+        <input type="email" id="email" placeholder="Email Address">
         <select id="interest">
-          <option value="Hot">Hot Lead</option>
-          <option value="Medium" selected>Medium Interest</option>
-          <option value="Low">Low Interest</option>
+          <option value="Hot">🔥 Hot Lead</option>
+          <option value="Medium" selected>⚡ Medium Interest</option>
+          <option value="Low">ℹ️ Low / General Info</option>
         </select>
-        <textarea id="notes" placeholder="Notes..."></textarea>
-        <button type="submit">Save Lead</button>
+        <textarea id="notes" placeholder="Custom notes / interest details..."></textarea>
+        <button type="submit" class="btn">Save Lead</button>
       </form>
+    </div>
+  </div>
+
+  <!-- View & Export Section -->
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+      <h2>Saved Leads Logbook</h2>
+      <button onclick="clearAllLeads()" class="btn-clear">Delete All</button>
+    </div>
+
+    <button onclick="exportToCSV()" class="btn btn-export">📥 Export All Leads to CSV (Excel)</button>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Company</th>
+            <th>Email</th>
+            <th>Interest</th>
+            <th>Notes</th>
+            <th>Date/Time</th>
+          </tr>
+        </thead>
+        <tbody id="leadTableBody">
+          <!-- Rows will be injected here dynamically -->
+        </tbody>
+      </table>
     </div>
   </div>
 
   <script>
     let leads = JSON.parse(localStorage.getItem('eliv_leads')) || [];
-    const countEl = document.getElementById('count');
 
-    function updateCount() { countEl.textContent = `${leads.length} Leads`; }
-    
+    function renderLeads() {
+      const tbody = document.getElementById('leadTableBody');
+      document.getElementById('count').textContent = `${leads.length} Leads Saved`;
+      
+      if (leads.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#888;">No leads captured yet. Scan a badge or enter details above.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = leads.map(l => `
+        <tr>
+          <td><strong>${escapeHtml(l.name)}</strong></td>
+          <td>${escapeHtml(l.company || '-')}</td>
+          <td>${escapeHtml(l.email || '-')}</td>
+          <td><span class="tag-${l.interest}">${l.interest}</span></td>
+          <td>${escapeHtml(l.notes || '-')}</td>
+          <td style="font-size:0.8rem; color:#aaa;">${l.timestamp}</td>
+        </tr>
+      `).join('');
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    // Save Lead Function
     document.getElementById('form').addEventListener('submit', (e) => {
       e.preventDefault();
-      leads.unshift({
+      const newLead = {
         name: document.getElementById('name').value,
         company: document.getElementById('company').value,
         email: document.getElementById('email').value,
         interest: document.getElementById('interest').value,
-        notes: document.getElementById('notes').value
-      });
+        notes: document.getElementById('notes').value,
+        timestamp: new Date().toLocaleString()
+      };
+
+      leads.unshift(newLead);
       localStorage.setItem('eliv_leads', JSON.stringify(leads));
-      updateCount();
+      renderLeads();
       e.target.reset();
     });
 
-    // Scanner Initialization
+    // Export to CSV File
+    function exportToCSV() {
+      if (leads.length === 0) {
+        alert("No leads to export!");
+        return;
+      }
+
+      let csvContent = "data:text/csv;charset=utf-8,Name,Company,Email,Interest Level,Notes,Timestamp\n";
+      leads.forEach(l => {
+        let row = [
+          `"${l.name.replace(/"/g, '""')}"`,
+          `"${(l.company || '').replace(/"/g, '""')}"`,
+          `"${(l.email || '').replace(/"/g, '""')}"`,
+          `"${l.interest}"`,
+          `"${(l.notes || '').replace(/"/g, '""')}"`,
+          `"${l.timestamp}"`
+        ].join(",");
+        csvContent += row + "\n";
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `ELIV_Expo_Leads_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // Delete Leads
+    function clearAllLeads() {
+      if (confirm("Are you sure you want to delete all saved leads? This cannot be undone.")) {
+        leads = [];
+        localStorage.removeItem('eliv_leads');
+        renderLeads();
+      }
+    }
+
+    // QR Scanner Initialization
     const scanner = new Html5Qrcode("reader");
     scanner.start(
       { facingMode: "environment" },
-      { fps: 10, qrbox: { width: 220, height: 220 } },
+      { fps: 10, qrbox: { width: 200, height: 200 } },
       (text) => {
         if (text.includes('BEGIN:VCARD')) {
           const n = text.match(/FN:(.*)/) || text.match(/N:(.*)/);
@@ -100,14 +210,13 @@
       }
     ).catch(() => {});
 
-    updateCount();
+    // Initial Load
+    renderLeads();
 
-    // Register physical Service Worker for PWA compliance
+    // Service Worker Registration
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('SW Registered'))
-          .catch(err => console.error('SW Error:', err));
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
       });
     }
   </script>
