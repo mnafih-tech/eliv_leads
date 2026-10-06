@@ -39,8 +39,15 @@
     .btn-delete-item { background: rgba(255, 71, 87, 0.15); color: var(--danger); border: 1px solid var(--danger); padding: 0.25rem 0.6rem; font-size: 0.8rem; border-radius: 4px; cursor: pointer; }
     .btn-delete-item:hover { background: var(--danger); color: #fff; }
 
+    /* Controls & Pagination */
+    .controls-row { display: flex; gap: 0.5rem; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; flex-wrap: wrap; }
+    .search-input { margin: 0; flex: 1; min-width: 200px; }
+    .pagination { display: flex; gap: 0.5rem; align-items: center; }
+    .btn-page { background: #1a2333; color: #fff; border: 1px solid var(--border); padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; }
+    .btn-page:disabled { opacity: 0.4; cursor: not-allowed; }
+
     /* Table Styles */
-    .table-container { overflow-x: auto; margin-top: 1rem; }
+    .table-container { overflow-x: auto; margin-top: 0.5rem; }
     table { width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left; }
     th, td { padding: 0.75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
     th { background: #1a2333; color: var(--primary); }
@@ -93,6 +100,15 @@
 
     <button onclick="exportToCSV()" class="btn btn-export">📥 Export All Leads to CSV (Excel)</button>
 
+    <div class="controls-row">
+      <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search by name, company, email..." oninput="handleSearch()">
+      <div class="pagination">
+        <button id="prevBtn" onclick="changePage(-1)" class="btn-page">◀ Prev</button>
+        <span id="pageIndicator" style="font-size: 0.85rem; color: #aaa;">Page 1</span>
+        <button id="nextBtn" onclick="changePage(1)" class="btn-page">Next ▶</button>
+      </div>
+    </div>
+
     <div class="table-container">
       <table>
         <thead>
@@ -115,40 +131,104 @@
   </div>
 
   <script>
-    let leads = JSON.parse(localStorage.getItem('eliv_leads')) || [];
+    let leads = [];
+    try {
+      leads = JSON.parse(localStorage.getItem('eliv_leads')) || [];
+    } catch (e) {
+      console.error("Failed to parse leads from storage:", e);
+      leads = [];
+    }
+
+    let currentPage = 1;
+    const pageSize = 20;
+    let filteredLeads = [...leads];
     let html5QrcodeScanner = null;
     let isScanning = false;
+
+    // Safe LocalStorage Saving
+    function persistLeads() {
+      try {
+        localStorage.setItem('eliv_leads', JSON.stringify(leads));
+        return true;
+      } catch (e) {
+        alert("⚠️ Storage quota reached! Please export your current leads to CSV and delete old records to prevent data loss.");
+        return false;
+      }
+    }
+
+    function handleSearch() {
+      const query = document.getElementById('searchInput').value.toLowerCase().trim();
+      if (!query) {
+        filteredLeads = [...leads];
+      } else {
+        filteredLeads = leads.filter(l => 
+          (l.name && l.name.toLowerCase().includes(query)) ||
+          (l.company && l.company.toLowerCase().includes(query)) ||
+          (l.email && l.email.toLowerCase().includes(query)) ||
+          (l.notes && l.notes.toLowerCase().includes(query))
+        );
+      }
+      currentPage = 1;
+      renderLeads();
+    }
+
+    function changePage(delta) {
+      const maxPage = Math.ceil(filteredLeads.length / pageSize) || 1;
+      currentPage = Math.min(Math.max(1, currentPage + delta), maxPage);
+      renderLeads();
+    }
 
     function renderLeads() {
       const tbody = document.getElementById('leadTableBody');
       document.getElementById('count').textContent = `${leads.length} Leads Saved`;
-      
-      if (leads.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#888;">No leads captured yet. Scan a badge or enter details above.</td></tr>';
+
+      if (filteredLeads.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#888;">No leads found.</td></tr>';
+        document.getElementById('pageIndicator').textContent = 'Page 0 of 0';
+        document.getElementById('prevBtn').disabled = true;
+        document.getElementById('nextBtn').disabled = true;
         return;
       }
 
-      tbody.innerHTML = leads.map((l, index) => `
-        <tr>
-          <td><strong>${escapeHtml(l.name)}</strong></td>
-          <td>${escapeHtml(l.company || '-')}</td>
-          <td>${escapeHtml(l.email || '-')}</td>
-          <td>${escapeHtml(l.phone || '-')}</td>
-          <td><span class="tag-${l.interest}">${l.interest}</span></td>
-          <td>${escapeHtml(l.notes || '-')}</td>
-          <td style="font-size:0.8rem; color:#aaa;">${l.timestamp}</td>
-          <td>
-            <button onclick="deleteSingleLead(${index})" class="btn-delete-item">Delete</button>
-          </td>
-        </tr>
-      `).join('');
+      const totalPages = Math.ceil(filteredLeads.length / pageSize);
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      const startIndex = (currentPage - 1) * pageSize;
+      const visibleLeads = filteredLeads.slice(startIndex, startIndex + pageSize);
+
+      document.getElementById('pageIndicator').textContent = `Page ${currentPage} of ${totalPages}`;
+      document.getElementById('prevBtn').disabled = currentPage === 1;
+      document.getElementById('nextBtn').disabled = currentPage === totalPages;
+
+      tbody.innerHTML = visibleLeads.map((l) => {
+        const originalIndex = leads.indexOf(l);
+        return `
+          <tr>
+            <td><strong>${escapeHtml(l.name || '')}</strong></td>
+            <td>${escapeHtml(l.company || '-')}</td>
+            <td>${escapeHtml(l.email || '-')}</td>
+            <td>${escapeHtml(l.phone || '-')}</td>
+            <td><span class="tag-${escapeHtml(l.interest || 'Medium')}">${escapeHtml(l.interest || 'Medium')}</span></td>
+            <td>${escapeHtml(l.notes || '-')}</td>
+            <td style="font-size:0.8rem; color:#aaa;">${escapeHtml(l.timestamp || '')}</td>
+            <td>
+              <button onclick="deleteSingleLead(${originalIndex})" class="btn-delete-item">Delete</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
     function escapeHtml(str) {
-      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
     }
 
-    // Toggle Camera Scanner On/Off via Button
+    // Toggle Camera Scanner On/Off
     function toggleScanner() {
       const btn = document.getElementById('scanToggleBtn');
       const readerBox = document.getElementById('reader');
@@ -163,7 +243,6 @@
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 200, height: 200 } },
           (text) => {
-            // Success QR Scan Callback
             if (text.includes('BEGIN:VCARD')) {
               const n = text.match(/FN:(.*)/) || text.match(/N:(.*)/);
               const c = text.match(/ORG:(.*)/);
@@ -177,7 +256,6 @@
             } else {
               document.getElementById('name').value = text;
             }
-            // Stop scanning after successful read
             toggleScanner();
           }
         ).then(() => {
@@ -203,7 +281,7 @@
       }
     }
 
-    // Save Lead Function
+    // Save Lead
     document.getElementById('form').addEventListener('submit', (e) => {
       e.preventDefault();
       const newLead = {
@@ -217,49 +295,52 @@
       };
 
       leads.unshift(newLead);
-      localStorage.setItem('eliv_leads', JSON.stringify(leads));
-      renderLeads();
+      persistLeads();
+      handleSearch();
       e.target.reset();
     });
 
     // Delete single lead
     function deleteSingleLead(index) {
+      if (index < 0 || index >= leads.length) return;
       const leadName = leads[index].name;
       if (confirm(`Delete lead entry for "${leadName}"?`)) {
         leads.splice(index, 1);
-        localStorage.setItem('eliv_leads', JSON.stringify(leads));
-        renderLeads();
+        persistLeads();
+        handleSearch();
       }
     }
 
-    // Export to CSV File
+    // Export to CSV File (Memory Safe Blob URL)
     function exportToCSV() {
       if (leads.length === 0) {
         alert("No leads to export!");
         return;
       }
 
-      let csvContent = "data:text/csv;charset=utf-8,Name,Company,Email,Telefon,Interest Level,Notes,Timestamp\n";
+      let csvRows = ["Name,Company,Email,Telefon,Interest Level,Notes,Timestamp"];
       leads.forEach(l => {
         let row = [
-          `"${l.name.replace(/"/g, '""')}"`,
+          `"${(l.name || '').replace(/"/g, '""')}"`,
           `"${(l.company || '').replace(/"/g, '""')}"`,
           `"${(l.email || '').replace(/"/g, '""')}"`,
           `"${(l.phone || '').replace(/"/g, '""')}"`,
-          `"${l.interest}"`,
+          `"${(l.interest || '').replace(/"/g, '""')}"`,
           `"${(l.notes || '').replace(/"/g, '""')}"`,
-          `"${l.timestamp}"`
+          `"${(l.timestamp || '').replace(/"/g, '""')}"`
         ].join(",");
-        csvContent += row + "\n";
+        csvRows.push(row);
       });
 
-      const encodedUri = encodeURI(csvContent);
+      const blob = new Blob([csvRows.join("\n")], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
+      link.setAttribute("href", url);
       link.setAttribute("download", `ELIV_Expo_Leads_${new Date().toISOString().slice(0,10)}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     }
 
     // Clear All
@@ -267,12 +348,12 @@
       if (confirm("Are you sure you want to delete all saved leads? This cannot be undone.")) {
         leads = [];
         localStorage.removeItem('eliv_leads');
-        renderLeads();
+        handleSearch();
       }
     }
 
     // Initial Load
-    renderLeads();
+    handleSearch();
 
     // Service Worker Registration
     if ('serviceWorker' in navigator) {
