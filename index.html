@@ -15,6 +15,7 @@
       --card: #121929;
       --primary: #00ff87;
       --danger: #ff4757;
+      --warning: #ffa500;
       --text: #ffffff;
       --border: #2a354d;
     }
@@ -27,17 +28,26 @@
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
     @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
     
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; position: relative; }
     #reader { width: 100%; border-radius: 8px; overflow: hidden; background: #000; min-height: 220px; margin-top: 0.8rem; display: none; }
     
     input, select, textarea { width: 100%; padding: 0.75rem; margin-top: 0.4rem; margin-bottom: 0.8rem; background: #1a2333; border: 1px solid var(--border); color: #fff; border-radius: 6px; }
     
-    .btn { width: 100%; padding: 0.85rem; background: var(--primary); color: #000; font-weight: bold; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; }
+    .btn { width: 100%; padding: 0.85rem; background: var(--primary); color: #000; font-weight: bold; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; transition: opacity 0.2s; }
+    .btn:hover { opacity: 0.9; }
     .btn-scan { background: #1a2333; color: var(--primary); border: 1px solid var(--primary); margin-bottom: 0.5rem; }
     .btn-export { background: #60efff; color: #000; margin-bottom: 1rem; }
     .btn-clear { background: transparent; color: var(--danger); border: 1px solid var(--danger); width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: 4px; cursor: pointer; }
+    
+    .action-btns { display: flex; gap: 0.4rem; }
+    .btn-edit-item { background: rgba(96, 239, 255, 0.15); color: #60efff; border: 1px solid #60efff; padding: 0.25rem 0.6rem; font-size: 0.8rem; border-radius: 4px; cursor: pointer; }
+    .btn-edit-item:hover { background: #60efff; color: #000; }
     .btn-delete-item { background: rgba(255, 71, 87, 0.15); color: var(--danger); border: 1px solid var(--danger); padding: 0.25rem 0.6rem; font-size: 0.8rem; border-radius: 4px; cursor: pointer; }
     .btn-delete-item:hover { background: var(--danger); color: #fff; }
+
+    .edit-mode-indicator { display: none; background: rgba(96, 239, 255, 0.1); border: 1px dashed #60efff; padding: 0.5rem; border-radius: 6px; margin-bottom: 0.8rem; font-size: 0.85rem; color: #60efff; align-items: center; justify-content: space-between; }
+    .btn-cancel-edit { background: transparent; color: #aaa; border: 1px solid #555; padding: 0.2rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
+    .btn-cancel-edit:hover { color: #fff; border-color: #fff; }
 
     /* Controls & Pagination */
     .controls-row { display: flex; gap: 0.5rem; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; flex-wrap: wrap; }
@@ -54,6 +64,14 @@
     .tag-Hot { color: #ff4757; font-weight: bold; }
     .tag-Medium { color: #ffa500; }
     .tag-Low { color: #2ed573; }
+
+    /* Custom Message Modal */
+    #customModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; padding: 1rem; }
+    .modal-content { background: var(--card); border: 1px solid var(--border); padding: 1.5rem; border-radius: 12px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    .modal-buttons { display: flex; gap: 0.8rem; margin-top: 1.2rem; justify-content: center; }
+    .modal-btn { padding: 0.6rem 1.2rem; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; font-size: 0.9rem; }
+    .modal-btn-confirm { background: var(--primary); color: #000; }
+    .modal-btn-cancel { background: #1a2333; color: #fff; border: 1px solid var(--border); }
   </style>
   <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
@@ -74,7 +92,11 @@
 
     <!-- Form Section -->
     <div class="card">
-      <h2 style="font-size:1.1rem; margin-bottom:0.5rem;">2. Lead Details</h2>
+      <div id="editIndicator" class="edit-mode-indicator">
+        <span>✏️ Editing Existing Lead</span>
+        <button type="button" onclick="cancelEditMode()" class="btn-cancel-edit">Cancel Edit</button>
+      </div>
+      <h2 id="formTitle" style="font-size:1.1rem; margin-bottom:0.5rem;">2. Lead Details</h2>
       <form id="form">
         <input type="text" id="name" placeholder="Full Name" required>
         <input type="text" id="company" placeholder="Company">
@@ -86,7 +108,7 @@
           <option value="Low">ℹ️ Low / General Info</option>
         </select>
         <textarea id="notes" placeholder="Custom notes / interest details..."></textarea>
-        <button type="submit" class="btn">Save Lead</button>
+        <button type="submit" id="formSubmitBtn" class="btn">Save Lead</button>
       </form>
     </div>
   </div>
@@ -95,7 +117,7 @@
   <div class="card">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
       <h2>Saved Leads Logbook</h2>
-      <button onclick="clearAllLeads()" class="btn-clear">Delete All</button>
+      <button onclick="confirmClearAll()" class="btn-clear">Delete All</button>
     </div>
 
     <button onclick="exportToCSV()" class="btn btn-export">📥 Export All Leads to CSV (Excel)</button>
@@ -130,6 +152,17 @@
     </div>
   </div>
 
+  <!-- Custom Modal Box (Replaces alert/confirm) -->
+  <div id="customModal">
+    <div class="modal-content">
+      <p id="modalMessage" style="margin-bottom: 0.5rem; font-size: 1rem; line-height: 1.4;"></p>
+      <div class="modal-buttons" id="modalButtons">
+        <button id="modalConfirmBtn" class="modal-btn modal-btn-confirm">OK</button>
+        <button id="modalCancelBtn" class="modal-btn modal-btn-cancel" style="display:none;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let leads = [];
     try {
@@ -139,11 +172,53 @@
       leads = [];
     }
 
+    // Ensure legacy leads have unique IDs
+    leads = leads.map(l => ({
+      id: l.id || ('lead_' + Math.random().toString(36).substr(2, 9) + Date.now()),
+      ...l
+    }));
+
     let currentPage = 1;
     const pageSize = 20;
     let filteredLeads = [...leads];
     let html5QrcodeScanner = null;
     let isScanning = false;
+    let editingLeadId = null; // Tracks active edit state
+
+    // Custom non-blocking notification/confirm dialogs
+    function showModalMessage(message, isConfirm = false, onConfirm = null) {
+      const modal = document.getElementById('customModal');
+      const msgEl = document.getElementById('modalMessage');
+      const confirmBtn = document.getElementById('modalConfirmBtn');
+      const cancelBtn = document.getElementById('modalCancelBtn');
+
+      msgEl.textContent = message;
+      modal.style.display = 'flex';
+
+      // Clean old listeners
+      const newConfirm = confirmBtn.cloneNode(true);
+      const newCancel = cancelBtn.cloneNode(true);
+      confirmBtn.parentNode.replaceChild(newConfirm, confirmBtn);
+      cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+
+      if (isConfirm) {
+        document.getElementById('modalCancelBtn').style.display = 'inline-block';
+        document.getElementById('modalConfirmBtn').textContent = 'Confirm';
+        document.getElementById('modalConfirmBtn').onclick = () => {
+          modal.style.display = 'none';
+          if (onConfirm) onConfirm();
+        };
+        document.getElementById('modalCancelBtn').onclick = () => {
+          modal.style.display = 'none';
+        };
+      } else {
+        document.getElementById('modalCancelBtn').style.display = 'none';
+        document.getElementById('modalConfirmBtn').textContent = 'OK';
+        document.getElementById('modalConfirmBtn').onclick = () => {
+          modal.style.display = 'none';
+        };
+      }
+    }
 
     // Safe LocalStorage Saving
     function persistLeads() {
@@ -151,7 +226,7 @@
         localStorage.setItem('eliv_leads', JSON.stringify(leads));
         return true;
       } catch (e) {
-        alert("⚠️ Storage quota reached! Please export your current leads to CSV and delete old records to prevent data loss.");
+        showModalMessage("⚠️ Storage quota reached! Please export your current leads to CSV and delete old records to prevent data loss.");
         return false;
       }
     }
@@ -201,7 +276,6 @@
       document.getElementById('nextBtn').disabled = currentPage === totalPages;
 
       tbody.innerHTML = visibleLeads.map((l) => {
-        const originalIndex = leads.indexOf(l);
         return `
           <tr>
             <td><strong>${escapeHtml(l.name || '')}</strong></td>
@@ -212,7 +286,10 @@
             <td>${escapeHtml(l.notes || '-')}</td>
             <td style="font-size:0.8rem; color:#aaa;">${escapeHtml(l.timestamp || '')}</td>
             <td>
-              <button onclick="deleteSingleLead(${originalIndex})" class="btn-delete-item">Delete</button>
+              <div class="action-btns">
+                <button onclick="startEditLead('${l.id}')" class="btn-edit-item">Edit</button>
+                <button onclick="confirmDeleteLead('${l.id}')" class="btn-delete-item">Delete</button>
+              </div>
             </td>
           </tr>
         `;
@@ -228,7 +305,38 @@
         .replace(/'/g, "&#039;");
     }
 
-    // Toggle Camera Scanner On/Off
+    function startEditLead(id) {
+      const lead = leads.find(l => l.id === id);
+      if (!lead) return;
+
+      editingLeadId = id;
+      document.getElementById('name').value = lead.name || '';
+      document.getElementById('company').value = lead.company || '';
+      document.getElementById('email').value = lead.email || '';
+      document.getElementById('phone').value = lead.phone || '';
+      document.getElementById('interest').value = lead.interest || 'Medium';
+      document.getElementById('notes').value = lead.notes || '';
+
+      document.getElementById('formTitle').textContent = "2. Edit Lead Details";
+      document.getElementById('formSubmitBtn').textContent = "Update Lead";
+      document.getElementById('formSubmitBtn').style.background = "#60efff";
+      document.getElementById('formSubmitBtn').style.color = "#000";
+      document.getElementById('editIndicator').style.display = 'flex';
+
+      // Scroll form into view nicely on mobile
+      document.getElementById('form').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function cancelEditMode() {
+      editingLeadId = null;
+      document.getElementById('form').reset();
+      document.getElementById('formTitle').textContent = "2. Lead Details";
+      document.getElementById('formSubmitBtn').textContent = "Save Lead";
+      document.getElementById('formSubmitBtn').style.background = "var(--primary)";
+      document.getElementById('formSubmitBtn').style.color = "#000";
+      document.getElementById('editIndicator').style.display = 'none';
+    }
+
     function toggleScanner() {
       const btn = document.getElementById('scanToggleBtn');
       const readerBox = document.getElementById('reader');
@@ -243,19 +351,42 @@
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 200, height: 200 } },
           (text) => {
+            let scannedName = text;
+            let scannedCompany = "";
+            let scannedEmail = "";
+            let scannedPhone = "";
+
             if (text.includes('BEGIN:VCARD')) {
               const n = text.match(/FN:(.*)/) || text.match(/N:(.*)/);
               const c = text.match(/ORG:(.*)/);
               const em = text.match(/EMAIL.*:(.*)/);
               const ph = text.match(/TEL.*:(.*)/);
 
-              if (n) document.getElementById('name').value = n[1].trim();
-              if (c) document.getElementById('company').value = c[1].trim();
-              if (em) document.getElementById('email').value = em[1].trim();
-              if (ph) document.getElementById('phone').value = ph[1].trim();
-            } else {
-              document.getElementById('name').value = text;
+              if (n) scannedName = n[1].trim();
+              if (c) scannedCompany = c[1].trim();
+              if (em) scannedEmail = em[1].trim();
+              if (ph) scannedPhone = ph[1].trim();
             }
+
+            // Check if lead already exists in logbook by email or exact name
+            const existingLead = leads.find(l => 
+              (scannedEmail && l.email && l.email.toLowerCase() === scannedEmail.toLowerCase()) ||
+              (l.name && l.name.toLowerCase() === scannedName.toLowerCase())
+            );
+
+            if (existingLead) {
+              // Automatically switch to edit mode for this existing record
+              startEditLead(existingLead.id);
+              showModalMessage(`ℹ️ Lead "${existingLead.name}" already exists in your logbook. Switched to Edit mode so you can update notes.`);
+            } else {
+              // Populate new entry fields
+              document.getElementById('name').value = scannedName;
+              document.getElementById('company').value = scannedCompany;
+              document.getElementById('email').value = scannedEmail;
+              document.getElementById('phone').value = scannedPhone;
+              showModalMessage(`✅ Scanned new lead: ${scannedName}`);
+            }
+
             toggleScanner();
           }
         ).then(() => {
@@ -264,7 +395,7 @@
           btn.style.background = "var(--danger)";
           btn.style.color = "#fff";
         }).catch(err => {
-          alert("Unable to access camera: " + err);
+          showModalMessage("Unable to access camera: " + err);
           readerBox.style.display = 'none';
         });
 
@@ -281,40 +412,74 @@
       }
     }
 
-    // Save Lead
     document.getElementById('form').addEventListener('submit', (e) => {
       e.preventDefault();
-      const newLead = {
-        name: document.getElementById('name').value,
-        company: document.getElementById('company').value,
-        email: document.getElementById('email').value,
-        phone: document.getElementById('phone').value,
-        interest: document.getElementById('interest').value,
-        notes: document.getElementById('notes').value,
-        timestamp: new Date().toLocaleString()
-      };
+      
+      const nameVal = document.getElementById('name').value.trim();
+      const companyVal = document.getElementById('company').value.trim();
+      const emailVal = document.getElementById('email').value.trim();
+      const phoneVal = document.getElementById('phone').value.trim();
+      const interestVal = document.getElementById('interest').value;
+      const notesVal = document.getElementById('notes').value.trim();
+      const timestampVal = new Date().toLocaleString();
 
-      leads.unshift(newLead);
-      persistLeads();
+      if (editingLeadId) {
+        // Update existing lead
+        const leadIndex = leads.findIndex(l => l.id === editingLeadId);
+        if (leadIndex !== -1) {
+          leads[leadIndex] = {
+            ...leads[leadIndex],
+            name: nameVal,
+            company: companyVal,
+            email: emailVal,
+            phone: phoneVal,
+            interest: interestVal,
+            notes: notesVal,
+            timestamp: timestampVal // update timestamp to reflect edit time
+          };
+          persistLeads();
+          showModalMessage("Lead successfully updated!");
+        }
+        cancelEditMode();
+      } else {
+        // Create new lead with unique ID
+        const newLead = {
+          id: 'lead_' + Math.random().toString(36).substr(2, 9) + Date.now(),
+          name: nameVal,
+          company: companyVal,
+          email: emailVal,
+          phone: phoneVal,
+          interest: interestVal,
+          notes: notesVal,
+          timestamp: timestampVal
+        };
+
+        leads.unshift(newLead);
+        persistLeads();
+        e.target.reset();
+        showModalMessage("New lead successfully saved!");
+      }
+
       handleSearch();
-      e.target.reset();
     });
 
-    // Delete single lead
-    function deleteSingleLead(index) {
-      if (index < 0 || index >= leads.length) return;
-      const leadName = leads[index].name;
-      if (confirm(`Delete lead entry for "${leadName}"?`)) {
-        leads.splice(index, 1);
+    // Delete single lead with custom confirmation modal
+    function confirmDeleteLead(id) {
+      const lead = leads.find(l => l.id === id);
+      if (!lead) return;
+
+      showModalMessage(`Are you sure you want to delete lead entry for "${lead.name}"?`, true, () => {
+        leads = leads.filter(l => l.id !== id);
         persistLeads();
+        if (editingLeadId === id) cancelEditMode();
         handleSearch();
-      }
+      });
     }
 
     // Export to CSV File (Memory Safe Blob URL)
     function exportToCSV() {
       if (leads.length === 0) {
-        alert("No leads to export!");
+        showModalMessage("No leads to export!");
         return;
       }
 
@@ -343,13 +508,18 @@
       URL.revokeObjectURL(url);
     }
 
-    // Clear All
-    function clearAllLeads() {
-      if (confirm("Are you sure you want to delete all saved leads? This cannot be undone.")) {
+    // Clear All with confirmation modal
+    function confirmClearAll() {
+      if (leads.length === 0) {
+        showModalMessage("No leads to delete.");
+        return;
+      }
+      showModalMessage("Are you sure you want to delete all saved leads? This cannot be undone.", true, () => {
         leads = [];
         localStorage.removeItem('eliv_leads');
+        cancelEditMode();
         handleSearch();
-      }
+      });
     }
 
     // Initial Load
