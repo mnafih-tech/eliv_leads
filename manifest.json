@@ -1,23 +1,15 @@
 {
+  "short_name": "ELIV Scanner",
   "name": "ELIV Lead Scanner",
-  "short_name": "LeadScanner",
-  "description": "Offline-ready trade show lead capture application",
-  "start_url": "./index.html",
-  "display": "standalone",
-  "background_color": "#0a0f1d",
-  "theme_color": "#00ff87",
-  "orientation": "portrait",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/3593/3593455.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "https://cdn-icons-png.flaticon.com/512/3593/3593455.png",
-      "sizes": "512x512",
+      "src": "./icon.png",
       "type": "image/png",
-      "purpose": "any maskable"
+      "sizes": "192x192 512x512"
     }
-  ]
+  ],
+  "start_url": "./index.html",
+  "background_color": "#0a0f1d",
+  "theme_color": "#00ff87",
+  "display": "standalone"
 }
