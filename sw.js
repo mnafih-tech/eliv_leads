@@ -1,10 +1,11 @@
-const CACHE_NAME = 'eliv-lead-tracker-v2';
+const CACHE_NAME = 'smartai-lead-tracker-v1';
 
 // Assets to cache for 100% offline functionality
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
+  './icon.png',
   'https://unpkg.com/html5-qrcode'
 ];
 
