@@ -3,84 +3,244 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ELIV Lead Scanner</title>
+  <title>smartAI Lead Scanner</title>
   
   <link rel="manifest" href="./manifest.json">
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
   <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
-  <meta name="theme-color" content="#00ff87">
+  <meta name="theme-color" content="#9b4dff">
   <meta name="apple-mobile-web-app-capable" content="yes">
 
   <style>
     :root {
-      --bg: #0a0f1d;
-      --card: #121929;
-      --primary: #00ff87;
+      --bg: #100824;
+      --bg-gradient: radial-gradient(circle at 15% 10%, #2a1458 0%, #140a2e 48%, #0b0618 100%);
+      --card: #190e36;
+      --surface: #25154d;
+      --primary: #b56bff;
+      --primary-bright: #d49bff;
+      --accent: #e040fb;
       --danger: #ff4757;
       --warning: #ffa500;
       --text: #ffffff;
-      --border: #2a354d;
+      --muted: #b8a9d9;
+      --border: #3a2470;
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 1rem; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      background-image: var(--bg-gradient);
+      background-attachment: fixed;
+      color: var(--text);
+      padding: 1rem;
+      min-height: 100vh;
+    }
     
-    .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid var(--border); margin-bottom: 1rem; }
-    .badge { background: #1a2c38; color: var(--primary); padding: 0.4rem 0.8rem; border-radius: 20px; font-weight: bold; }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1rem;
+    }
+    .brand-title {
+      background: linear-gradient(90deg, #c78bff 0%, #e86dff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-size: 1.4rem;
+      font-weight: 800;
+    }
+    .badge {
+      background: rgba(155, 77, 255, 0.18);
+      border: 1px solid rgba(181, 107, 255, 0.45);
+      color: var(--primary-bright);
+      padding: 0.4rem 0.8rem;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 0.85rem;
+    }
     
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
     @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
     
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; position: relative; }
-    #reader { width: 100%; border-radius: 8px; overflow: hidden; background: #000; min-height: 220px; margin-top: 0.8rem; display: none; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      position: relative;
+      box-shadow: 0 8px 24px rgba(8, 3, 20, 0.45);
+    }
+    #reader {
+      width: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #080412;
+      min-height: 220px;
+      margin-top: 0.8rem;
+      display: none;
+      border: 1px solid var(--border);
+    }
     
-    input, select, textarea { width: 100%; padding: 0.75rem; margin-top: 0.4rem; margin-bottom: 0.8rem; background: #1a2333; border: 1px solid var(--border); color: #fff; border-radius: 6px; }
+    input, select, textarea {
+      width: 100%;
+      padding: 0.75rem;
+      margin-top: 0.4rem;
+      margin-bottom: 0.8rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: #fff;
+      border-radius: 6px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary);
+    }
+    input::placeholder, textarea::placeholder {
+      color: var(--muted);
+      opacity: 0.75;
+    }
     
-    .btn { width: 100%; padding: 0.85rem; background: var(--primary); color: #000; font-weight: bold; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; transition: opacity 0.2s; }
-    .btn:hover { opacity: 0.9; }
-    .btn-scan { background: #1a2333; color: var(--primary); border: 1px solid var(--primary); margin-bottom: 0.5rem; }
-    .btn-export { background: #60efff; color: #000; margin-bottom: 1rem; }
-    .btn-clear { background: transparent; color: var(--danger); border: 1px solid var(--danger); width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: 4px; cursor: pointer; }
+    .btn {
+      width: 100%;
+      padding: 0.85rem;
+      background: linear-gradient(135deg, #9b4dff 0%, #c837ab 100%);
+      color: #fff;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn:hover { opacity: 0.92; }
+    .btn:active { transform: scale(0.99); }
+    .btn-scan {
+      background: var(--surface);
+      color: var(--primary-bright);
+      border: 1px solid var(--primary);
+      margin-bottom: 0.5rem;
+    }
+    .btn-export {
+      background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+      color: #fff;
+      margin-bottom: 1rem;
+    }
+    .btn-clear {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid var(--danger);
+      width: auto;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.85rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
     
     .action-btns { display: flex; gap: 0.4rem; }
-    .btn-edit-item { background: rgba(96, 239, 255, 0.15); color: #60efff; border: 1px solid #60efff; padding: 0.25rem 0.6rem; font-size: 0.8rem; border-radius: 4px; cursor: pointer; }
-    .btn-edit-item:hover { background: #60efff; color: #000; }
-    .btn-delete-item { background: rgba(255, 71, 87, 0.15); color: var(--danger); border: 1px solid var(--danger); padding: 0.25rem 0.6rem; font-size: 0.8rem; border-radius: 4px; cursor: pointer; }
+    .btn-edit-item {
+      background: rgba(181, 107, 255, 0.16);
+      color: var(--primary-bright);
+      border: 1px solid var(--primary);
+      padding: 0.25rem 0.6rem;
+      font-size: 0.8rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-edit-item:hover { background: var(--primary); color: #120826; }
+    .btn-delete-item {
+      background: rgba(255, 71, 87, 0.15);
+      color: var(--danger);
+      border: 1px solid var(--danger);
+      padding: 0.25rem 0.6rem;
+      font-size: 0.8rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
     .btn-delete-item:hover { background: var(--danger); color: #fff; }
 
-    .edit-mode-indicator { display: none; background: rgba(96, 239, 255, 0.1); border: 1px dashed #60efff; padding: 0.5rem; border-radius: 6px; margin-bottom: 0.8rem; font-size: 0.85rem; color: #60efff; align-items: center; justify-content: space-between; }
-    .btn-cancel-edit { background: transparent; color: #aaa; border: 1px solid #555; padding: 0.2rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
-    .btn-cancel-edit:hover { color: #fff; border-color: #fff; }
+    .edit-mode-indicator {
+      display: none;
+      background: rgba(181, 107, 255, 0.14);
+      border: 1px dashed var(--primary-bright);
+      padding: 0.5rem;
+      border-radius: 6px;
+      margin-bottom: 0.8rem;
+      font-size: 0.85rem;
+      color: var(--primary-bright);
+      align-items: center;
+      justify-content: space-between;
+    }
+    .btn-cancel-edit {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.75rem;
+    }
+    .btn-cancel-edit:hover { color: #fff; border-color: var(--primary); }
 
     /* Controls & Pagination */
     .controls-row { display: flex; gap: 0.5rem; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; flex-wrap: wrap; }
     .search-input { margin: 0; flex: 1; min-width: 200px; }
     .pagination { display: flex; gap: 0.5rem; align-items: center; }
-    .btn-page { background: #1a2333; color: #fff; border: 1px solid var(--border); padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; }
+    .btn-page {
+      background: var(--surface);
+      color: #fff;
+      border: 1px solid var(--border);
+      padding: 0.4rem 0.8rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
     .btn-page:disabled { opacity: 0.4; cursor: not-allowed; }
 
     /* Table Styles */
     .table-container { overflow-x: auto; margin-top: 0.5rem; }
     table { width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left; }
     th, td { padding: 0.75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
-    th { background: #1a2333; color: var(--primary); }
-    .tag-Hot { color: #ff4757; font-weight: bold; }
+    th { background: var(--surface); color: var(--primary-bright); }
+    .tag-Hot { color: #ff6b81; font-weight: bold; }
     .tag-Medium { color: #ffa500; }
-    .tag-Low { color: #2ed573; }
+    .tag-Low { color: #55efc4; }
 
     /* Custom Message Modal */
-    #customModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; padding: 1rem; }
-    .modal-content { background: var(--card); border: 1px solid var(--border); padding: 1.5rem; border-radius: 12px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    #customModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(8, 4, 20, 0.78);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+    }
+    .modal-content {
+      background: var(--card);
+      border: 1px solid var(--primary);
+      padding: 1.5rem;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65);
+    }
     .modal-buttons { display: flex; gap: 0.8rem; margin-top: 1.2rem; justify-content: center; }
     .modal-btn { padding: 0.6rem 1.2rem; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; font-size: 0.9rem; }
-    .modal-btn-confirm { background: var(--primary); color: #000; }
-    .modal-btn-cancel { background: #1a2333; color: #fff; border: 1px solid var(--border); }
+    .modal-btn-confirm { background: linear-gradient(135deg, #9b4dff 0%, #c837ab 100%); color: #fff; }
+    .modal-btn-cancel { background: var(--surface); color: #fff; border: 1px solid var(--border); }
   </style>
   <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
 
   <div class="header">
-    <h1 style="color:var(--primary); font-size:1.4rem;">ELIV Lead Scanner</h1>
+    <h1 class="brand-title">smartAI Lead Scanner</h1>
     <span class="badge" id="count">0 Leads Saved</span>
   </div>
 
@@ -128,7 +288,7 @@
       <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search by name, company, email..." oninput="handleSearch()">
       <div class="pagination">
         <button id="prevBtn" onclick="changePage(-1)" class="btn-page">◀ Prev</button>
-        <span id="pageIndicator" style="font-size: 0.85rem; color: #aaa;">Page 1</span>
+        <span id="pageIndicator" style="font-size: 0.85rem; color: var(--muted);">Page 1</span>
         <button id="nextBtn" onclick="changePage(1)" class="btn-page">Next ▶</button>
       </div>
     </div>
@@ -260,7 +420,7 @@
       document.getElementById('count').textContent = `${leads.length} Leads Saved`;
 
       if (filteredLeads.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#888;">No leads found.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--muted);">No leads found.</td></tr>';
         document.getElementById('pageIndicator').textContent = 'Page 0 of 0';
         document.getElementById('prevBtn').disabled = true;
         document.getElementById('nextBtn').disabled = true;
@@ -286,7 +446,7 @@
             <td>${escapeHtml(l.phone || '-')}</td>
             <td><span class="tag-${escapeHtml(l.interest || 'Medium')}">${escapeHtml(l.interest || 'Medium')}</span></td>
             <td>${escapeHtml(l.notes || '-')}</td>
-            <td style="font-size:0.8rem; color:#aaa;">${escapeHtml(l.timestamp || '')}</td>
+            <td style="font-size:0.8rem; color:var(--muted);">${escapeHtml(l.timestamp || '')}</td>
             <td>
               <div class="action-btns">
                 <button onclick="startEditLead('${l.id}')" class="btn-edit-item">Edit</button>
@@ -321,8 +481,8 @@
 
       document.getElementById('formTitle').textContent = "2. Edit Lead Details";
       document.getElementById('formSubmitBtn').textContent = "Update Lead";
-      document.getElementById('formSubmitBtn').style.background = "#60efff";
-      document.getElementById('formSubmitBtn').style.color = "#000";
+      document.getElementById('formSubmitBtn').style.background = "linear-gradient(135deg, #c084fc 0%, #f472b6 100%)";
+      document.getElementById('formSubmitBtn').style.color = "#120826";
       document.getElementById('editIndicator').style.display = 'flex';
 
       // Scroll form into view nicely on mobile
@@ -334,8 +494,8 @@
       document.getElementById('form').reset();
       document.getElementById('formTitle').textContent = "2. Lead Details";
       document.getElementById('formSubmitBtn').textContent = "Save Lead";
-      document.getElementById('formSubmitBtn').style.background = "var(--primary)";
-      document.getElementById('formSubmitBtn').style.color = "#000";
+      document.getElementById('formSubmitBtn').style.background = "";
+      document.getElementById('formSubmitBtn').style.color = "";
       document.getElementById('editIndicator').style.display = 'none';
     }
 
@@ -396,6 +556,7 @@
           btn.textContent = "🛑 Stop Camera Scanner";
           btn.style.background = "var(--danger)";
           btn.style.color = "#fff";
+          btn.style.borderColor = "var(--danger)";
         }).catch(err => {
           showModalMessage("Unable to access camera: " + err);
           readerBox.style.display = 'none';
@@ -407,8 +568,9 @@
             isScanning = false;
             readerBox.style.display = 'none';
             btn.textContent = "📷 Start Camera Scanner";
-            btn.style.background = "#1a2333";
-            btn.style.color = "var(--primary)";
+            btn.style.background = "";
+            btn.style.color = "";
+            btn.style.borderColor = "";
           }).catch(() => {});
         }
       }
@@ -437,7 +599,7 @@
             phone: phoneVal,
             interest: interestVal,
             notes: notesVal,
-            timestamp: timestampVal // update timestamp to reflect edit time
+            timestamp: timestampVal
           };
           persistLeads();
           showModalMessage("Lead successfully updated!");
@@ -503,7 +665,7 @@
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.setAttribute("href", url);
-      link.setAttribute("download", `ELIV_Expo_Leads_${new Date().toISOString().slice(0,10)}.csv`);
+      link.setAttribute("download", `smartAI_Expo_Leads_${new Date().toISOString().slice(0,10)}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
