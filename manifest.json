@@ -1,6 +1,6 @@
 {
-  "short_name": "ELIV Scanner",
-  "name": "ELIV Lead Scanner",
+  "short_name": "smartAI Scanner",
+  "name": "smartAI Lead Scanner",
   "icons": [
     {
       "src": "./icon.png",
@@ -9,7 +9,7 @@
     }
   ],
   "start_url": "./index.html",
-  "background_color": "#0a0f1d",
-  "theme_color": "#00ff87",
+  "background_color": "#100824",
+  "theme_color": "#9b4dff",
   "display": "standalone"
 }
